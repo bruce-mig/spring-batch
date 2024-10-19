@@ -1,0 +1,14 @@
+services:
+  postgres_slb:
+    image: postgres:16.4
+    command: postgres -c 'max_connections=200'
+    environment:
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    ports:
+      - "5432:5432"
+    networks:
+      - csv-net
+networks:
+  csv-net:
