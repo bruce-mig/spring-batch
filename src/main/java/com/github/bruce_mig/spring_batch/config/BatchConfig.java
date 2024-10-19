@@ -17,6 +17,8 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
@@ -54,9 +56,10 @@ public class BatchConfig {
     @Bean
     public Step importStep(){
         return new StepBuilder("csvImport", jobRepository)
-                .<Student, Student>chunk(10, platformTransactionManager)
+                .<Student, Student>chunk(1000, platformTransactionManager)
                 .reader(itemReader())
                 .processor(processor())
+//                .taskExecutor(taskExecutor())
                 .writer(writer())
                 .build();
     }
@@ -67,6 +70,14 @@ public class BatchConfig {
                 .start(importStep())
 //                .next() // for subsequent steps
                 .build();
+    }
+
+    @Bean
+    public TaskExecutor taskExecutor(){
+        try (SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor()){
+            asyncTaskExecutor.setConcurrencyLimit(30);  // throttle number of threads
+            return asyncTaskExecutor;
+        }
     }
 
     private LineMapper<Student> lineMapper(){
