@@ -5,17 +5,20 @@ import com.github.bruce_mig.spring_batch.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.integration.async.AsyncItemProcessor;
 import org.springframework.batch.integration.async.AsyncItemWriter;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
@@ -36,9 +39,10 @@ public class BatchConfig {
     private final StudentProcessor studentProcessor;
 
     @Bean
-    public FlatFileItemReader<Student> itemReader(){
+    @StepScope
+    public FlatFileItemReader<Student> itemReader(@Value("#{jobParameters['input.file.name']}") String inputFileName) {
         FlatFileItemReader<Student> itemReader = new FlatFileItemReader<>();
-        itemReader.setResource(new FileSystemResource("src/main/resources/students.csv"));
+        itemReader.setResource(new FileSystemResource(inputFileName));
         itemReader.setName("csvReader");
         itemReader.setLinesToSkip(1);
         itemReader.setLineMapper(lineMapper());
@@ -60,10 +64,10 @@ public class BatchConfig {
     }
 
     @Bean
-    public Step importStep(){
+    public Step importStep(ItemReader<Student> studentDTOItemReader){
         return new StepBuilder("csvImport", jobRepository)
                 .<Student, Future<Student>>chunk(500, platformTransactionManager)
-                .reader(itemReader())
+                .reader(studentDTOItemReader)
                 .processor(asyncProcessor())
                 .writer(asyncWriter())
                 .taskExecutor(taskExecutor())
@@ -71,9 +75,9 @@ public class BatchConfig {
     }
 
     @Bean
-    public Job runJob(){
+    public Job runJob(Step importStep){
         return new JobBuilder("importStudents", jobRepository)
-                .start(importStep())
+                .start(importStep)
 //                .next() // for subsequent steps
                 .build();
     }
