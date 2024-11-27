@@ -1,6 +1,8 @@
 package com.github.bruce_mig.spring_batch.config;
 
 import com.github.bruce_mig.spring_batch.fault_tolerance.CustomSkipPolicy;
+import com.github.bruce_mig.spring_batch.listeners.CustomJobExecutionListener;
+import com.github.bruce_mig.spring_batch.listeners.CustomStepExecutionListener;
 import com.github.bruce_mig.spring_batch.student.Student;
 import com.github.bruce_mig.spring_batch.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,8 @@ public class BatchConfig {
     private final StudentRepository repository;
     private final StudentProcessor studentProcessor;
     private final CustomSkipPolicy customSkipPolicy;
+    private final CustomStepExecutionListener customStepExecutionListener;
+    private final CustomJobExecutionListener customJobExecutionListener;
 
     @Bean
     @StepScope
@@ -74,6 +78,7 @@ public class BatchConfig {
                 .writer(asyncWriter())
                 .faultTolerant()
                 .skipPolicy(customSkipPolicy)
+                .listener(customStepExecutionListener)
                 .taskExecutor(taskExecutor())
                 .build();
     }
@@ -82,7 +87,7 @@ public class BatchConfig {
     public Job runJob(Step importStep){
         return new JobBuilder("importStudents", jobRepository)
                 .start(importStep)
-//                .next() // for subsequent steps
+                .listener(customJobExecutionListener)
                 .build();
     }
 
