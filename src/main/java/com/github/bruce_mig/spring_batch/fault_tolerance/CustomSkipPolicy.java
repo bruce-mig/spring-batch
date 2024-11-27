@@ -23,7 +23,7 @@ public class CustomSkipPolicy implements SkipPolicy {
             String input = fileParseException.getInput();
             int lineNumber = fileParseException.getLineNumber();
 
-            log.warn(String.format("Skipping line %d: %s", lineNumber, input));
+            log.warn("Skipping line {}: {}", lineNumber, input);
             // write into a file
             // send into kafka topic or message broker
             return Boolean.TRUE;
