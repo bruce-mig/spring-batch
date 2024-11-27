@@ -1,5 +1,6 @@
 package com.github.bruce_mig.spring_batch.config;
 
+import com.github.bruce_mig.spring_batch.fault_tolerance.CustomSkipPolicy;
 import com.github.bruce_mig.spring_batch.student.Student;
 import com.github.bruce_mig.spring_batch.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class BatchConfig {
     private final PlatformTransactionManager platformTransactionManager;
     private final StudentRepository repository;
     private final StudentProcessor studentProcessor;
+    private final CustomSkipPolicy customSkipPolicy;
 
     @Bean
     @StepScope
@@ -70,6 +72,8 @@ public class BatchConfig {
                 .reader(studentDTOItemReader)
                 .processor(asyncProcessor())
                 .writer(asyncWriter())
+                .faultTolerant()
+                .skipPolicy(customSkipPolicy)
                 .taskExecutor(taskExecutor())
                 .build();
     }
