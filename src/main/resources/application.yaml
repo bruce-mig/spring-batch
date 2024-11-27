@@ -20,3 +20,7 @@ spring:
       enabled: false
 server:
   port: 9090
+
+
+student:
+  directory: data
