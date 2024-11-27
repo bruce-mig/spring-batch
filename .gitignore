@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 set-env.sh
+data/
 
 ### STS ###
 .apt_generated
