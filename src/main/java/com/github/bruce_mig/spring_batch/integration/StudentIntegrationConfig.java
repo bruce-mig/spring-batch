@@ -108,9 +108,7 @@ public class StudentIntegrationConfig {
     @Bean
     public IntegrationFlow outputConsumerFlow() {
         return IntegrationFlow.from(outputChannel())
-                .handle(message -> {
-                    log.info("Message received in outputChannel: {}", message);
-                })
+                .handle(message -> log.info("Message received in outputChannel: {}", message))
                 .get();
     }
 }
