@@ -127,6 +127,13 @@ To get started with Spring Batch, you can follow these steps:
 - Configure your database and set up any necessary infrastructure.
 - Run your Spring Batch job and monitor the JobExecution details.
 
+### Run custom docker compose file
+
+```bash
+docker-compose -f apache-kafka.yaml up -d
+
+```
+
 ### More details
 
 For more details, please refer to the Spring batch official documentation [Visit the official Spring Batch Documentation](https://docs.spring.io/spring-batch/docs/current/reference/html/index.html)
