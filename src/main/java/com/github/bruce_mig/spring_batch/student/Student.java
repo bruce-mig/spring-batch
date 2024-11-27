@@ -14,7 +14,7 @@ public class Student {
     @Id
     @GeneratedValue
     private Integer id;
-    private String fistName;
+    private String firstName;
     private String lastName;
     private int age;
 }
