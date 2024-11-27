@@ -16,7 +16,7 @@ public class CustomSkipPolicy implements SkipPolicy {
     private final Integer skipLimit = 10;
 
     @Override
-    public boolean shouldSkip(@NonNullApi Throwable exception, long skipCount) throws SkipLimitExceededException {
+    public boolean shouldSkip(Throwable exception, long skipCount) throws SkipLimitExceededException {
         if (exception instanceof FileNotFoundException){
             return Boolean.FALSE;
         } else if ((exception instanceof FlatFileParseException fileParseException) && (skipCount <= skipLimit)){
