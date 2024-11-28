@@ -6,6 +6,7 @@ import com.github.bruce_mig.spring_batch.listeners.CustomStepExecutionListener;
 import com.github.bruce_mig.spring_batch.student.Student;
 import com.github.bruce_mig.spring_batch.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -21,14 +22,17 @@ import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.kafka.KafkaItemWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -43,6 +47,7 @@ public class BatchConfig {
     private final CustomSkipPolicy customSkipPolicy;
     private final CustomStepExecutionListener customStepExecutionListener;
     private final CustomJobExecutionListener customJobExecutionListener;
+    private final KafkaTemplate<String, Student> studentKafkaTemplate;
 
     @Bean
     @StepScope
@@ -69,8 +74,10 @@ public class BatchConfig {
         return  writer;
     }
 
+
+// Async
     @Bean
-    public Step importStep(ItemReader<Student> studentDTOItemReader){
+    public Step asyncImportStep(ItemReader<Student> studentDTOItemReader){
         return new StepBuilder("csvImport", jobRepository)
                 .<Student, Future<Student>>chunk(500, platformTransactionManager)
                 .reader(studentDTOItemReader)
@@ -83,10 +90,38 @@ public class BatchConfig {
                 .build();
     }
 
+    // Async
     @Bean
-    public Job runJob(Step importStep){
+    public Step kafkaImportStep(ItemReader<Student> studentDTOItemReader){
+        return new StepBuilder("csvImport", jobRepository)
+                .<Student,Student>chunk(500, platformTransactionManager)
+                .reader(studentDTOItemReader)
+                .processor(studentProcessor)
+                .writer(studentKafkaWriter())
+                .faultTolerant()
+                .skipPolicy(customSkipPolicy)
+                .listener(customStepExecutionListener)
+                .build();
+    }
+
+    @Bean
+    public Step importStep(ItemReader<Student> studentDTOItemReader){
+        return new StepBuilder("csvImport", jobRepository)
+                .<Student, Student>chunk(500, platformTransactionManager)
+                .reader(studentDTOItemReader)
+                .processor(studentProcessor)
+                .writer(writer())
+                .faultTolerant()
+                .skipPolicy(customSkipPolicy)
+                .listener(customStepExecutionListener)
+                .taskExecutor(taskExecutor())
+                .build();
+    }
+
+    @Bean
+    public Job runJob(Step kafkaImportStep){
         return new JobBuilder("importStudents", jobRepository)
-                .start(importStep)
+                .start(kafkaImportStep)
                 .listener(customJobExecutionListener)
                 .build();
     }
@@ -125,6 +160,24 @@ public class BatchConfig {
         AsyncItemWriter<Student> asyncWriter = new AsyncItemWriter<>();
         asyncWriter.setDelegate(writer());
         return asyncWriter;
+    }
+
+    @Bean
+    public AsyncItemWriter<Student> asyncKafkaWriter(){
+        AsyncItemWriter<Student> asyncWriter = new AsyncItemWriter<>();
+        asyncWriter.setDelegate(studentKafkaWriter());
+        return asyncWriter;
+    }
+
+    @Bean
+    @SneakyThrows
+    public KafkaItemWriter<String, Student> studentKafkaWriter(){
+        var kafkaItemWriter = new KafkaItemWriter<String, Student>();
+        kafkaItemWriter.setKafkaTemplate(studentKafkaTemplate);
+        kafkaItemWriter.setItemKeyMapper(student -> String.valueOf(student.getId()));
+        kafkaItemWriter.setDelete(Boolean.FALSE);
+        kafkaItemWriter.afterPropertiesSet();
+        return kafkaItemWriter;
     }
 
     private LineMapper<Student> lineMapper(){
