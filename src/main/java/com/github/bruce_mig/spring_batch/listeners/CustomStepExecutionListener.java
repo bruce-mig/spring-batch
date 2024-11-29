@@ -19,7 +19,10 @@ public class CustomStepExecutionListener implements StepExecutionListener {
     public ExitStatus afterStep(StepExecution stepExecution) {
         if (ExitStatus.COMPLETED.equals(stepExecution.getExitStatus())) {
             log.info("Step {} completed", stepExecution.getStepName());
-            return ExitStatus.COMPLETED;
+            if (stepExecution.getReadSkipCount() > 0) {
+                return new ExitStatus("COMPLETED_WITH_SKIPS");
+            }
+            return stepExecution.getExitStatus();
         }
         log.info("Step {} failed", stepExecution.getStepName());
         return stepExecution.getExitStatus();
