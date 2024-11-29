@@ -3,9 +3,10 @@ package com.github.bruce_mig.spring_batch.config;
 import com.github.bruce_mig.spring_batch.fault_tolerance.CustomSkipPolicy;
 import com.github.bruce_mig.spring_batch.listeners.CustomJobExecutionListener;
 import com.github.bruce_mig.spring_batch.listeners.CustomStepExecutionListener;
-import com.github.bruce_mig.spring_batch.step.FileCollector;
+import com.github.bruce_mig.spring_batch.tasklets.FileCollector;
 import com.github.bruce_mig.spring_batch.student.Student;
 import com.github.bruce_mig.spring_batch.student.StudentRepository;
+import com.github.bruce_mig.spring_batch.tasklets.SendEmail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -46,6 +47,7 @@ public class BatchConfig {
     private final CustomStepExecutionListener customStepExecutionListener;
     private final CustomJobExecutionListener customJobExecutionListener;
     private final FileCollector fileCollector;
+    private final SendEmail sendEmail;
 
     @Bean
     @StepScope
@@ -88,8 +90,15 @@ public class BatchConfig {
 
     @Bean
     public Step fileCollectorTasklet(){
-        return new StepBuilder("fileCollector", jobRepository).
-                tasklet(fileCollector, platformTransactionManager)
+        return new StepBuilder("fileCollector", jobRepository)
+                .tasklet(fileCollector, platformTransactionManager)
+                .build();
+    }
+
+    @Bean
+    public Step sendEmailTasklet(){
+        return new StepBuilder("sendEmail", jobRepository)
+                .tasklet(sendEmail, platformTransactionManager)
                 .build();
     }
 
@@ -97,8 +106,10 @@ public class BatchConfig {
     public Job runJob(Step importStep){
         return new JobBuilder("importStudents", jobRepository)
                 .incrementer(new RunIdIncrementer())
-                .start(importStep)
-                .next(fileCollectorTasklet())
+                .start(importStep).on("FAILED").end()
+                .from(importStep).on("COMPLETED").to(fileCollectorTasklet())
+                .from(importStep).on("COMPLETED_WITH_SKIPS").to(sendEmailTasklet())
+                .end()
                 .listener(customJobExecutionListener)
                 .build();
     }
