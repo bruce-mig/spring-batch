@@ -3,6 +3,7 @@ package com.github.bruce_mig.spring_batch.config;
 import com.github.bruce_mig.spring_batch.fault_tolerance.CustomSkipPolicy;
 import com.github.bruce_mig.spring_batch.listeners.CustomJobExecutionListener;
 import com.github.bruce_mig.spring_batch.listeners.CustomStepExecutionListener;
+import com.github.bruce_mig.spring_batch.step.FileCollector;
 import com.github.bruce_mig.spring_batch.student.Student;
 import com.github.bruce_mig.spring_batch.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.integration.async.AsyncItemProcessor;
@@ -43,6 +45,7 @@ public class BatchConfig {
     private final CustomSkipPolicy customSkipPolicy;
     private final CustomStepExecutionListener customStepExecutionListener;
     private final CustomJobExecutionListener customJobExecutionListener;
+    private final FileCollector fileCollector;
 
     @Bean
     @StepScope
@@ -84,9 +87,18 @@ public class BatchConfig {
     }
 
     @Bean
+    public Step fileCollectorTasklet(){
+        return new StepBuilder("fileCollector", jobRepository).
+                tasklet(fileCollector, platformTransactionManager)
+                .build();
+    }
+
+    @Bean
     public Job runJob(Step importStep){
         return new JobBuilder("importStudents", jobRepository)
+                .incrementer(new RunIdIncrementer())
                 .start(importStep)
+                .next(fileCollectorTasklet())
                 .listener(customJobExecutionListener)
                 .build();
     }
