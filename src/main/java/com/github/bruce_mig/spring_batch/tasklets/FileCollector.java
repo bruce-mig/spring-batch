@@ -1,4 +1,4 @@
-package com.github.bruce_mig.spring_batch.step;
+package com.github.bruce_mig.spring_batch.tasklets;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepContribution;
