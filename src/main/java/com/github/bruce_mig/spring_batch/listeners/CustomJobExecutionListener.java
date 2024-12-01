@@ -22,6 +22,14 @@ public class CustomJobExecutionListener implements JobExecutionListener {
     @Override
     public void beforeJob(JobExecution jobExecution) {
         log.info("-------> Job execution started");
+        JobParameters jobParameters = jobExecution.getJobParameters();
+        Map<String, JobParameter<?>> parameters = jobParameters.getParameters();
+        if (parameters.containsKey(INPUT_FILE_NAME)) {
+            JobParameter<?> inputFileJobParameter = parameters.get(INPUT_FILE_NAME);
+            Path inputDirectoryPath = Paths.get(inputFileJobParameter.getValue().toString()).getParent();
+            Path processedDirectory = Path.of(inputDirectoryPath.toFile() + File.separator + "processed");
+            createDirectoryIfAbsent(processedDirectory);
+        }
     }
 
     @Override
@@ -32,7 +40,6 @@ public class CustomJobExecutionListener implements JobExecutionListener {
         if (parameters.containsKey(INPUT_FILE_NAME)) {
             compute(jobExecution, parameters);
         }
-
     }
 
     private void compute(final JobExecution jobExecution, Map<String, JobParameter<?>> parameters) {
