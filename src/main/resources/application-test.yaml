@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16.4/file-upload
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  batch:
+    jdbc:
+      initialize-schema: ALWAYS
+    job:
+      enabled: false
+server:
+  port: 9090
+
+
+student:
+  directory: data
