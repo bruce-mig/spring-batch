@@ -1,6 +1,6 @@
-# Spring Batch Demo
+# Spring Batch 
 
-This repository demonstrates the process of file import through batch processing.
+This repository demonstrates the process of batch file polling and upload into a database through batch processing.
 
 ---
 
@@ -18,82 +18,6 @@ A **Job** in Spring Batch is the top-level entity that encapsulates an entire ba
 ![Spring batch Job overview](./spring_batch_job_overview.png)
 
 ---
-
-### Configuration Example:
-
-```java
-@Configuration
-@RequiredArgsConstructor
-public class BatchConfig {
-
-    private final JobRepository jobRepository;
-    private final PlatformTransactionManager platformTransactionManager;
-    private final StudentRepository repository;
-
-    @Bean
-    public FlatFileItemReader<Student> reader() {
-        FlatFileItemReader<Student> itemReader = new FlatFileItemReader<>();
-        //...
-        return itemReader;
-    }
-
-    @Bean
-    public StudentProcessor processor() {
-        return new StudentProcessor();
-    }
-
-
-    @Bean
-    public RepositoryItemWriter<Student> writer() {
-        RepositoryItemWriter<Student> writer = new RepositoryItemWriter<>();
-        writer.setRepository(repository);
-        writer.setMethodName("save");
-        return writer;
-    }
-
-    @Bean
-    public Step step1() {
-        return new StepBuilder("csvImport", jobRepository)
-                .<Student, Student>chunk(1000, platformTransactionManager)
-                .reader(reader())
-                .processor(processor())
-                .writer(writer())
-                .taskExecutor(taskExecutor())
-                .build();
-    }
-
-    @Bean
-    public Job runJob() {
-        return new JobBuilder("importStudents", jobRepository)
-                .start(step1())
-                .build();
-
-    }
-
-    @Bean
-    public TaskExecutor taskExecutor() {
-        SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
-        asyncTaskExecutor.setConcurrencyLimit(10);
-        return asyncTaskExecutor;
-    }
-
-    private LineMapper<Student> lineMapper() {
-        DefaultLineMapper<Student> lineMapper = new DefaultLineMapper<>();
-
-        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
-        lineTokenizer.setDelimiter(",");
-        lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("id", "firstName", "lastName", "age");
-
-        BeanWrapperFieldSetMapper<Student> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(Student.class);
-
-        lineMapper.setLineTokenizer(lineTokenizer);
-        lineMapper.setFieldSetMapper(fieldSetMapper);
-        return lineMapper;
-    }
-}
-```
 
 ## Step
 A Step is a fundamental building block within a Job. It represents a single phase of the batch processing and consists of an ItemReader, ItemProcessor, and ItemWriter. Steps are organized within a Job to create a flow, and each step can be configured individually.
@@ -126,6 +50,10 @@ To get started with Spring Batch, you can follow these steps:
 - Implement ItemReader, ItemProcessor, and ItemWriter for your specific use case.
 - Configure your database and set up any necessary infrastructure.
 - Run your Spring Batch job and monitor the JobExecution details.
+
+### Application system design architecture
+
+![system design](end-to-end-batch-job.png)
 
 ### More details
 
