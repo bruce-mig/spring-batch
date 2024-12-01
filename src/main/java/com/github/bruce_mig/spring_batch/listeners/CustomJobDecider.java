@@ -15,7 +15,7 @@ public class CustomJobDecider implements JobExecutionDecider {
         if (stepExecution.getExitStatus().getExitCode().equalsIgnoreCase(ExitStatus.FAILED.getExitCode())
                 && stepExecution.getReadSkipCount() > 1) {
             log.info("Changing the exit status to COMPLETED WITH SKIPS");
-            return new FlowExecutionStatus("COMPLETED WITH SKIPS");
+            return new FlowExecutionStatus("COMPLETED_WITH_SKIPS");
         }
         String exitCode = stepExecution.getExitStatus().getExitCode();
         log.warn(exitCode);
