@@ -2,6 +2,8 @@
 
 This repository demonstrates the process of batch file polling and upload into a database through batch processing.
 
+NB: For batch processing with Apache Kafka, checkout the `ft/kafka` branch in this repository.
+
 ---
 
 ## Introduction
