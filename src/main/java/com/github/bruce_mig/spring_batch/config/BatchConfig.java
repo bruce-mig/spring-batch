@@ -77,7 +77,7 @@ public class BatchConfig {
     @Bean
     public Step importStep(ItemReader<Student> studentDTOItemReader){
         return new StepBuilder("csvImport", jobRepository)
-                .<Student, Future<Student>>chunk(500, platformTransactionManager)
+                .<Student, Future<Student>>chunk(500, platformTransactionManager) // chunk size not more than rows in file
                 .reader(studentDTOItemReader)
                 .processor(asyncProcessor())
                 .writer(asyncWriter())
@@ -106,7 +106,7 @@ public class BatchConfig {
     public Job runJob(Step importStep){
         return new JobBuilder("importStudents", jobRepository)
                 .incrementer(new RunIdIncrementer())
-                .start(importStep).on("FAILED").end()
+                .start(importStep).on("FAILED").fail()
                 .from(importStep).on("COMPLETED").to(fileCollectorTasklet())
                 .from(importStep).on("COMPLETED_WITH_SKIPS").to(sendEmailTasklet())
                 .end()
